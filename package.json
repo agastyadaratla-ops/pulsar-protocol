@@ -1,0 +1,24 @@
+{
+  "name": "pulsar-protocol",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pulsar Protocol - co-op round-based robot survival FPS for the browser",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "test": "node test/smoke.js && node test/net.js",
+    "test:sim": "node test/smoke.js",
+    "test:net": "node test/net.js",
+    "build:pages": "node tools/build-pages.js",
+    "preview:pages": "node tools/serve-dist.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "three": "^0.185.1",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

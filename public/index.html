@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pulsar Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="view"></canvas>
+<canvas id="fx2d"></canvas>
+
+<!-- ============================ HUD ============================ -->
+<div id="hud" class="hidden">
+  <div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+  <div id="hitmarker"></div>
+  <div id="vignette"></div>
+  <div id="dmgflash"></div>
+
+  <div id="topbar">
+    <div class="round-pod">
+      <span class="lbl">WAVE</span>
+      <span id="roundNum">0</span>
+      <div id="roundPips"></div>
+    </div>
+    <div id="zoneName">CRYO BAY</div>
+    <div class="right-pods">
+      <div class="pod"><span class="lbl">HOSTILES</span><span id="leftNum">0</span></div>
+      <div class="pod"><span class="lbl">POWER</span><span id="powerState" class="bad">OFFLINE</span></div>
+    </div>
+  </div>
+
+  <div id="buffbar"></div>
+  <div id="feed"></div>
+  <div id="bigmsg"></div>
+  <div id="prompt" class="hidden"><b></b><span></span></div>
+
+  <div id="squad"></div>
+
+  <div id="bottomleft">
+    <div id="creditRow"><span class="cr">&#8226;</span><span id="credits">500</span><span class="crlbl">CREDITS</span></div>
+    <div id="healthWrap"><div id="healthBar"></div><div id="healthTick"></div></div>
+    <div id="perkRow"></div>
+  </div>
+
+  <div id="bottomright">
+    <div id="wpnName">M7 PULSE SIDEARM</div>
+    <div id="ammoRow"><span id="magAmmo">12</span><span class="sep">/</span><span id="resAmmo">120</span></div>
+    <div id="altRow"><span id="altWpn">— EMPTY —</span><span id="nadeCount">&#9679;&#9679;&#9679;&#9679;</span></div>
+    <div id="reloadBar" class="hidden"><i></i></div>
+  </div>
+
+  <canvas id="minimap" width="240" height="240"></canvas>
+
+  <div id="downedOverlay" class="hidden">
+    <div class="big">SYSTEMS CRITICAL</div>
+    <div class="sub">Hold position — squad revive required</div>
+    <div id="bleedWrap"><div id="bleedBar"></div></div>
+  </div>
+
+  <div id="scoreboard" class="hidden"><div class="sb-inner"><h3>SQUAD STATUS</h3><table id="sbTable"></table></div></div>
+  <div id="chatbox" class="hidden"><input id="chatInput" maxlength="90" placeholder="say something…" autocomplete="off"></div>
+</div>
+
+<!-- ============================ MENU ============================ -->
+<div id="menu">
+  <div class="scan"></div>
+  <div class="menu-inner">
+    <h1>PULSAR<span>PROTOCOL</span></h1>
+    <p class="tag">The foundry woke up. Its machines did too.<br>Hold the line. Buy the doors. Overclock everything.</p>
+
+    <div class="fields">
+      <label>CALLSIGN<input id="nameInput" maxlength="14" placeholder="OPERATOR"></label>
+      <label>SQUAD CODE<input id="roomInput" maxlength="8" placeholder="ALPHA"></label>
+      <label class="wide">SERVER<input id="serverInput" placeholder="same origin"></label>
+    </div>
+
+    <button id="deployBtn">DEPLOY</button>
+    <div id="connState">idle</div>
+
+    <div class="cols">
+      <div>
+        <h4>CONTROLS</h4>
+        <ul>
+          <li><b>WASD</b> move &nbsp; <b>SHIFT</b> sprint</li>
+          <li><b>MOUSE</b> free look &nbsp; <b>LMB</b> fire &nbsp; <b>RMB</b> focus</li>
+          <li><b>R</b> reload &nbsp; <b>Q</b> swap &nbsp; <b>G</b> EMP charge</li>
+          <li><b>F</b> hold to buy / revive</li>
+          <li>Three facilities, drawn at random on deploy</li>
+          <li><b>TAB</b> squad &nbsp; <b>ENTER</b> chat &nbsp; <b>ESC</b> pause menu</li>
+        </ul>
+      </div>
+      <div>
+        <h4>FIELD NOTES</h4>
+        <ul>
+          <li>Credits come from damage and kills. Spend them on blast doors to open the facility.</li>
+          <li>Find the <b>power switch</b> deep in the complex — it wakes the chip sockets and the Overclock Station.</li>
+          <li>The <b>Fabricator</b> rolls a random pulsar weapon for 950 and relocates when it gets bored.</li>
+          <li>Downed operators bleed out in 42 seconds. Hold <b>F</b> on a teammate to bring them back.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot">12 sectors &middot; 96&times;72 grid &middot; up to 4 operators &middot; webgl</div>
+  </div>
+</div>
+
+<!-- ========================= PAUSE ========================= -->
+<div id="pause" class="hidden">
+  <div class="pause-inner">
+    <h2>SYSTEM MENU</h2>
+    <p class="pause-warn">The facility does not stop. Your operator is still standing in it.</p>
+
+    <div id="pauseStats"></div>
+
+    <div class="pause-actions">
+      <button id="resumeBtn">RESUME</button>
+      <button id="abortBtn" class="danger">ABORT TO LANDING</button>
+    </div>
+    <div id="pauseHint"></div>
+
+    <div class="pause-controls">
+      <span><b>WASD</b> move</span><span><b>SHIFT</b> sprint</span>
+      <span><b>LMB</b> fire</span><span><b>RMB</b> focus</span>
+      <span><b>R</b> reload</span><span><b>Q</b> swap</span>
+      <span><b>G</b> EMP</span><span><b>F</b> buy / revive</span>
+      <span><b>TAB</b> squad</span><span><b>ENTER</b> chat</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FACILITY ROULETTE ===================== -->
+<div id="picker" class="hidden">
+  <div class="pick-inner">
+    <div class="pick-head">SELECTING FACILITY</div>
+    <div id="pickReel"></div>
+    <div id="pickBlurb"></div>
+    <div id="pickMeta">12 SECTORS &middot; 96&times;72 GRID</div>
+  </div>
+</div>
+
+<div id="gameover" class="hidden">
+  <div class="go-inner">
+    <h2>SIGNAL LOST</h2>
+    <div id="goStats"></div>
+    <p>Re-initialising facility…</p>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.min.js" } }
+</script>
+<script type="module">
+  // Module scripts run after parsing but before DOMContentLoaded, so THREE is
+  // in place by the time the classic scripts below boot the game.
+  import * as THREE from 'three';
+  window.THREE = THREE;
+</script>
+
+<script src="js/config.js"></script>
+<script src="/shared/weapons.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/net.js"></script>
+<script src="js/render3d.js" defer></script>
+<script src="js/hud.js"></script>
+<script src="js/game.js" defer></script>
+</body>
+</html>
